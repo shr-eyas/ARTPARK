@@ -9,8 +9,10 @@ from std_msgs.msg import Int32
 from std_msgs.msg import Float64
 import numpy as np
 import cv2
+import tf2_ros
+from geometry_msgs.msg import TransformStamped
 
-class DetectAndData(Node):
+class ArucoDetect(Node):
 
     def __init__(self, dictionary_type, marker_length_m):
         super().__init__('data')
@@ -32,6 +34,7 @@ class DetectAndData(Node):
         self.distance_publisher_ = self.create_publisher(Float64, 'aruco_info/distance', 10)
         self.rvecs_publisher_ = self.create_publisher(Vector3, 'aruco_info/rvecs', 10)
         self.tvecs_publisher_ = self.create_publisher(Vector3, 'aruco_info/tvecs', 10)
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
 
     def image_callback(self, data):
         self.image = data
@@ -101,8 +104,22 @@ class DetectAndData(Node):
                 self.yaw_publisher_.publish(yaw_msg)
                 self.distance_publisher_.publish(distance_msg)
 
+                transform_stamped = TransformStamped()
+                transform_stamped.header.stamp = self.get_clock().now().to_msg()
+                transform_stamped.header.frame_id = "camera_color_frame" 
+                transform_stamped.child_frame_id = f"aruco_marker_{ids[i][0]}"
+                transform_stamped.transform.translation.x = tvec[0]
+                transform_stamped.transform.translation.y = tvec[1]
+                transform_stamped.transform.translation.z = tvec[2]
+                transform_stamped.transform.rotation.x = rvec[0]
+                transform_stamped.transform.rotation.y = rvec[1]
+                transform_stamped.transform.rotation.z = rvec[2]
+                transform_stamped.transform.rotation.w = 1.0 
+
+                self.tf_broadcaster.sendTransform(transform_stamped)
+
 def main(args=None):
     rclpy.init(args=args)
-    node = DetectAndData(dictionary_type=cv2.aruco.DICT_6X6_250, marker_length_m=0.05)
+    node = ArucoDetect(dictionary_type=cv2.aruco.DICT_6X6_250, marker_length_m=0.05)
     rclpy.spin(node)
     rclpy.shutdown()
