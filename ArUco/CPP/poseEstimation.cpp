@@ -1,11 +1,34 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/aruco.hpp>
+#include <cmath>
 
 using namespace std;
 using namespace cv;
 
-int main(){
+void rotationVectorToQuaternion(const double* rotationVector, double* quaternion) {
 
+    double norm = std::sqrt(rotationVector[0]*rotationVector[0] + 
+                            rotationVector[1]*rotationVector[1] + 
+                            rotationVector[2]*rotationVector[2]);
+
+    double angle = norm;
+    double sin_half_angle = std::sin(angle / 2.0);
+
+    if (std::abs(norm) > 1e-6) {
+        quaternion[0] = rotationVector[0] / norm * sin_half_angle;
+        quaternion[1] = rotationVector[1] / norm * sin_half_angle;
+        quaternion[2] = rotationVector[2] / norm * sin_half_angle;
+        quaternion[3] = std::cos(angle / 2.0);
+    } else {
+        quaternion[0] = 0.0;
+        quaternion[1] = 0.0;
+        quaternion[2] = 0.0;
+        quaternion[3] = 1.0;
+    }
+}
+
+int main(){
+         
     cv::VideoCapture inputVideo(0);
     float markerSize = 0.075; /* 75 mm */ 
     cv::Mat image, imageCopy, cameraMatrix, distCoeffs;
@@ -32,10 +55,12 @@ int main(){
             std::vector<cv::Vec3d> rvecs, tvecs;
             aruco::estimatePoseSingleMarkers(corners, markerSize, cameraMatrix, distCoeffs, rvecs, tvecs);
             for (int i = 0; i < ids.size(); i++) {
-                aruco::drawAxis(imageCopy, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], 0.1);
+                
+                double quaternion[4];
+                rotationVectorToQuaternion(rvecs[i].val, quaternion);
 
-                // Print the marker ID and quaternion
-                cout << "Marker ID: " << ids[i] << ", Quaternion: " << rvecs[i] << endl;
+                cout << "Marker ID: " << ids[i] << ", Quaternion: (" << quaternion[0] << ", " << quaternion[1]
+                     << ", " << quaternion[2] << ", " << quaternion[3] << ")" << endl;
             }
         }
 
