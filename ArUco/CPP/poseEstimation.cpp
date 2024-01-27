@@ -49,16 +49,13 @@ int main(){
         std::vector<std::vector<cv::Point2f>> corners;
         aruco::detectMarkers(image, dictionary, corners, ids);
 
-
         if (!ids.empty()) {
             aruco::drawDetectedMarkers(imageCopy, corners, ids);
             std::vector<cv::Vec3d> rvecs, tvecs;
             aruco::estimatePoseSingleMarkers(corners, markerSize, cameraMatrix, distCoeffs, rvecs, tvecs);
             for (int i = 0; i < ids.size(); i++) {
-                
                 double quaternion[4];
                 rotationVectorToQuaternion(rvecs[i].val, quaternion);
-
                 cout << "Marker ID: " << ids[i] << ", Quaternion: (" << quaternion[0] << ", " << quaternion[1]
                      << ", " << quaternion[2] << ", " << quaternion[3] << ")" << endl;
             }
@@ -67,7 +64,6 @@ int main(){
         cv::imshow("Out", imageCopy);
 
         int key = cv::waitKey(1);
-
         if(key == 27){
             break;
         }
