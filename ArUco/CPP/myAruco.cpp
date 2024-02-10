@@ -27,6 +27,11 @@ void rotationVectorToQuaternion(const double* rotationVector, double* quaternion
     }
 }
 
+struct MarkerPose {
+    int id;
+    vector<double> quaternion;
+};
+
 class MyAruco {
 
 private:
@@ -34,7 +39,7 @@ private:
     cv::Ptr<aruco::Dictionary> dictionary;
     cv::Mat cameraMatrix;
     cv::Mat distCoeffs;
-    vector<vector<double>> quaternions;
+    vector<MarkerPose> poses;
     float markerSize;
     
 public:
@@ -93,11 +98,11 @@ public:
                 aruco::drawDetectedMarkers(image, corners, ids);
                 vector<cv::Vec3d> rvecs, tvecs;
                 aruco::estimatePoseSingleMarkers(corners, markerSize, cameraMatrix, distCoeffs, rvecs, tvecs);
-                quaternions.clear(); 
+                poses.clear(); 
                 for (int i = 0; i < ids.size(); i++) {
                     double quaternion[4];
                     rotationVectorToQuaternion(rvecs[i].val, quaternion);
-                    quaternions.push_back(vector<double>(quaternion, quaternion + 4)); 
+                    poses.push_back({ids[i], vector<double>(quaternion, quaternion + 4)}); 
                 }
             }
             cv::imshow("image", image);
@@ -110,8 +115,8 @@ public:
         cv::destroyAllWindows(); 
     }
 
-    vector<vector<double>> get() {
-        return quaternions;
+    vector<MarkerPose> get() {
+        return poses;
     }
 
     void generate(int marker_id, int marker_size, int border_bits) {
@@ -163,20 +168,19 @@ int main() {
     MyAruco myAruco(0.05, cv::aruco::DICT_6X6_250, userCameraMatrix, userDistCoeffs);
 
     myAruco.detect();
-    vector<vector<double>> quaternions = myAruco.get(); 
-
+    // vector<MarkerPose> poses = myAruco.get();
 
     // myAruco.generate(2, 200, 1);
     // myAruco.calibrate("/home/sophia/Documents/Calibration/*.png", Size(8, 6));
 
-    // Use quaternions as needed
-    for (int i = 0; i < quaternions.size(); ++i) {
-        cout << "Quaternion " << i << ": ";
-        for (int j = 0; j < quaternions[i].size(); ++j) {
-            cout << quaternions[i][j] << " ";
-        }
-        cout << endl;
-    }
+    // Use poses as needed
+    // for (int i = 0; i < poses.size(); ++i) {
+    //     cout << "Marker ID: " << poses[i].id << ", Quaternion: ";
+    //     for (int j = 0; j < poses[i].quaternion.size(); ++j) {
+    //         cout << poses[i].quaternion[j] << " ";
+    //     }
+    //     cout << endl;
+    // }
 
     return 0;
 }
